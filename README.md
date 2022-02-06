@@ -183,6 +183,55 @@ There are 2 approaches for when `render_bundle` shows up in tests, since we don'
 2. The second approach is to leverage [`LOADER_CLASS` overriding](#extra-settings) for the test settings and customize the `get_bundle` method to return the url of a stats file. Note that, using this approach, the stats file doesn't have to [exist](https://github.com/django-webpack/django-webpack-loader/issues/187#issuecomment-901449290).
 
 ## Advanced Usage
+
+### Vue3 Support
+
+*This is just a work-around solution and far from perfection. 
+Vue3 report file has some differences compare to webpack stats.json.
+So, my solution is not guarantee to work.*
+
+To use `django-webpack-loader` for vue 3, first, you need to enable vue3 in settings
+
+```python
+WEBPACK_LOADER = {
+    'DEFAULT': {
+        ...
+        'STATS_FILE': '<path to vue dir>/dist/report.json',
+        'VUE3_ENABLE': True
+    }
+}
+```
+
+and add staticfile directory.
+
+```python
+STATICFILES_DIRS = [
+    ...
+    "<path to vue dir>/dist" + STATIC_URL  
+]
+```
+
+In Vue 3 directory, you need to edit script in `package.json`
+
+```json
+  ...
+  "scripts": {
+    "serve": "vue-cli-service build --mode development --report-json --watch",
+    "build": "vue-cli-service build --mode production --report-json",
+    ...
+  },
+  ...
+```
+
+and add a `vue.config.js` file
+
+```js
+module.exports = {
+  assetsDir: 'static/',  // or your Django project STATIC_URL 
+}
+```
+
+
 ### Rendering by file extension
 
 `render_bundle` also takes a second argument which can be a file extension to match. This is useful when you want to render different types for files in separately. For example, to render CSS in head and JS at bottom we can do something like this,

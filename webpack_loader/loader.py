@@ -68,6 +68,11 @@ class WebpackLoader(object):
         )
         return staticfiles_storage.url(relpath)
 
+    def map_vue_chunk_files_to_url(self, chunks):
+        for chunk in chunks:
+            # url = staticfiles_storage.url(chunk)
+            yield {'name': chunk, 'url': chunk}
+
     def get_bundle(self, bundle_name):
         assets = self.get_assets()
 
@@ -77,7 +82,7 @@ class WebpackLoader(object):
             timeout = self.config['TIMEOUT'] or 0
             timed_out = False
             start = time.time()
-            while assets['status'] == 'compile' and not timed_out:
+            while assets.get('status') == 'compile' and not timed_out:
                 time.sleep(self.config['POLL_INTERVAL'])
                 if timeout and (time.time() - timeout > start):
                     timed_out = True
@@ -88,6 +93,21 @@ class WebpackLoader(object):
                     "Timed Out. Bundle `{0}` took more than {1} seconds "
                     "to compile.".format(bundle_name, timeout)
                 )
+
+        if self.config['VUE3_ENABLE']:
+            chunks_dict = assets['chunks']
+            if chunks_dict is None:
+                raise WebpackBundleLookupError('Cannot resolve bundle.')
+
+            chunks = []
+            for chunk in chunks_dict:
+                for f in chunk['files']:
+                    chunks.append(f)
+            print(chunks)
+            filtered_chunks = self.filter_chunks(chunks)
+            print(filtered_chunks)
+
+            return self.map_vue_chunk_files_to_url(filtered_chunks)
 
         if assets.get('status') == 'done':
             chunks = assets['chunks'].get(bundle_name, None)
